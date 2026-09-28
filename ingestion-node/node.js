@@ -48,18 +48,27 @@ const tcpServer = net.createServer({ noDelay: true, keepAlive: true }, (socket) 
   socket.setKeepAlive(true, 10000);
   socket.setNoDelay(true);
 
+  let buf = '';
   socket.on('data', (chunk) => {
     totalBytes += chunk.length;
     bytesInLastSecond += chunk.length;
 
-    // Count newline-delimited messages or fallback to 1
-    let count = 0;
-    for (let i = 0; i < chunk.length; i++) {
-      if (chunk[i] === 10) count++; // \n
+    buf += chunk.toString('utf8');
+    let idx;
+    while ((idx = buf.indexOf('\n')) !== -1) {
+      const line = buf.slice(0, idx);
+      buf = buf.slice(idx + 1);
+      if (line.length === 0) continue;
+
+      totalMessages++;
+      messagesInLastSecond++;
+
+      const match = /(?:^|[^a-zA-Z0-9_])"?seq"?\s*[:= ]\s*(\d+)/i.exec(line);
+      if (match && socket.writable) {
+        socket.write('ACK ' + match[1] + '\n');
+      }
     }
-    const msgs = count > 0 ? count : 1;
-    totalMessages += msgs;
-    messagesInLastSecond += msgs;
+    if (buf.length > 65536) buf = '';
   });
 
   socket.on('error', (err) => {

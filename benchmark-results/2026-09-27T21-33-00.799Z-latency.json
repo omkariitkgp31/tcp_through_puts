@@ -1,0 +1,187 @@
+{
+  "timestamp": "2026-09-27T21:33:00.799Z",
+  "metadata": {
+    "lbEndpoint": "127.0.0.1:7000",
+    "stages": [
+      50,
+      100
+    ],
+    "targetRatePerDevice": 5,
+    "intervalMs": 200,
+    "warmupSec": 2,
+    "holdDurationSec": 10,
+    "nodesMonitored": [
+      "D1 (:7001 / :8001)",
+      "D2 (:7002 / :8002)",
+      "D3 (:7003 / :8003)",
+      "D4 (:7004 / :8004)"
+    ]
+  },
+  "stages": [
+    {
+      "stage": 1,
+      "connections": 50,
+      "activeHeld": 50,
+      "sumBackendActive": 50,
+      "durationSec": 10.1,
+      "aggregateReqPerSec": 244.7,
+      "aggregateMBPerSec": 0.18,
+      "perNodeThroughput": {
+        "D1": {
+          "port": 8001,
+          "mps": 58.7,
+          "mbPerSec": 0.044,
+          "activeConnections": 12,
+          "cpuPercent": 0,
+          "rssMB": 60.81
+        },
+        "D2": {
+          "port": 8002,
+          "mps": 58.7,
+          "mbPerSec": 0.044,
+          "activeConnections": 12,
+          "cpuPercent": 0,
+          "rssMB": 60.91
+        },
+        "D3": {
+          "port": 8003,
+          "mps": 63.6,
+          "mbPerSec": 0.048,
+          "activeConnections": 13,
+          "cpuPercent": 1.6,
+          "rssMB": 61.05
+        },
+        "D4": {
+          "port": 8004,
+          "mps": 63.7,
+          "mbPerSec": 0.048,
+          "activeConnections": 13,
+          "cpuPercent": 4.7,
+          "rssMB": 60.98
+        }
+      },
+      "tDataLatencyMs": {
+        "count": 2471,
+        "p50": 0.795,
+        "p90": 1.519,
+        "p95": 1.83,
+        "p99": 2.707,
+        "p99_9": 3.561,
+        "p99_99": 4.375
+      },
+      "tConnLatencyMs": {
+        "count": 50,
+        "p50": 0.907,
+        "p90": 1.139,
+        "p95": 1.25,
+        "p99": 2.445,
+        "p99_9": 2.445,
+        "p99_99": 2.445
+      },
+      "errors": {
+        "ECONNRESET": 0,
+        "EPIPE": 0,
+        "ETIMEDOUT": 0,
+        "other": 0,
+        "totalErrors": 0
+      },
+      "sanityPassed": true
+    },
+    {
+      "stage": 2,
+      "connections": 100,
+      "activeHeld": 100,
+      "sumBackendActive": 100,
+      "durationSec": 10.1,
+      "aggregateReqPerSec": 486.5,
+      "aggregateMBPerSec": 0.37,
+      "perNodeThroughput": {
+        "D1": {
+          "port": 8001,
+          "mps": 121.7,
+          "mbPerSec": 0.092,
+          "activeConnections": 25,
+          "cpuPercent": 0,
+          "rssMB": 60.93
+        },
+        "D2": {
+          "port": 8002,
+          "mps": 121.7,
+          "mbPerSec": 0.092,
+          "activeConnections": 25,
+          "cpuPercent": 1.6,
+          "rssMB": 60.89
+        },
+        "D3": {
+          "port": 8003,
+          "mps": 121.6,
+          "mbPerSec": 0.092,
+          "activeConnections": 25,
+          "cpuPercent": 0,
+          "rssMB": 60.95
+        },
+        "D4": {
+          "port": 8004,
+          "mps": 121.6,
+          "mbPerSec": 0.092,
+          "activeConnections": 25,
+          "cpuPercent": 1.6,
+          "rssMB": 61.02
+        }
+      },
+      "tDataLatencyMs": {
+        "count": 4914,
+        "p50": 1.047,
+        "p90": 2.131,
+        "p95": 2.413,
+        "p99": 3.263,
+        "p99_9": 3.615,
+        "p99_99": 3.951
+      },
+      "tConnLatencyMs": {
+        "count": 50,
+        "p50": 0.872,
+        "p90": 1.557,
+        "p95": 1.817,
+        "p99": 2.011,
+        "p99_9": 2.011,
+        "p99_99": 2.011
+      },
+      "errors": {
+        "ECONNRESET": 0,
+        "EPIPE": 0,
+        "ETIMEDOUT": 0,
+        "other": 0,
+        "totalErrors": 0
+      },
+      "sanityPassed": true
+    }
+  ],
+  "global": {
+    "tDataLatencyMs": {
+      "count": 7829,
+      "p50": 0.954,
+      "p90": 1.958,
+      "p95": 2.287,
+      "p99": 3.127,
+      "p99_9": 3.599,
+      "p99_99": 4.375
+    },
+    "tConnLatencyMs": {
+      "count": 100,
+      "p50": 0.881,
+      "p90": 1.414,
+      "p95": 1.604,
+      "p99": 2.011,
+      "p99_9": 2.445,
+      "p99_99": 2.445
+    },
+    "errors": {
+      "ECONNRESET": 0,
+      "EPIPE": 0,
+      "ETIMEDOUT": 0,
+      "other": 0,
+      "totalErrors": 0
+    }
+  }
+}

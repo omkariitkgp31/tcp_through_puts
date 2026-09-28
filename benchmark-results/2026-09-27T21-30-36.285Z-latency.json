@@ -1,0 +1,117 @@
+{
+  "timestamp": "2026-09-27T21:30:36.285Z",
+  "metadata": {
+    "lbEndpoint": "127.0.0.1:7000",
+    "stages": [
+      50
+    ],
+    "targetRatePerDevice": 5,
+    "intervalMs": 200,
+    "warmupSec": 2,
+    "holdDurationSec": 5,
+    "nodesMonitored": [
+      "D1 (:7001 / :8001)",
+      "D2 (:7002 / :8002)",
+      "D3 (:7003 / :8003)",
+      "D4 (:7004 / :8004)"
+    ]
+  },
+  "stages": [
+    {
+      "stage": 1,
+      "connections": 50,
+      "activeHeld": 50,
+      "sumBackendActive": 50,
+      "durationSec": 5,
+      "aggregateReqPerSec": 246.1,
+      "aggregateMBPerSec": 0.19,
+      "perNodeThroughput": {
+        "D1": {
+          "port": 8001,
+          "mps": 64,
+          "mbPerSec": 0.048,
+          "activeConnections": 13,
+          "cpuPercent": 0,
+          "rssMB": 60.65
+        },
+        "D2": {
+          "port": 8002,
+          "mps": 64,
+          "mbPerSec": 0.048,
+          "activeConnections": 13,
+          "cpuPercent": 0,
+          "rssMB": 60.61
+        },
+        "D3": {
+          "port": 8003,
+          "mps": 59,
+          "mbPerSec": 0.045,
+          "activeConnections": 12,
+          "cpuPercent": 0,
+          "rssMB": 60.44
+        },
+        "D4": {
+          "port": 8004,
+          "mps": 59,
+          "mbPerSec": 0.045,
+          "activeConnections": 12,
+          "cpuPercent": 0,
+          "rssMB": 60.72
+        }
+      },
+      "tDataLatencyMs": {
+        "count": 1242,
+        "p50": 0.742,
+        "p90": 1.229,
+        "p95": 1.558,
+        "p99": 2.767,
+        "p99_9": 3.253,
+        "p99_99": 3.533
+      },
+      "tConnLatencyMs": {
+        "count": 50,
+        "p50": 0.859,
+        "p90": 1.146,
+        "p95": 1.238,
+        "p99": 2.855,
+        "p99_9": 2.855,
+        "p99_99": 2.855
+      },
+      "errors": {
+        "ECONNRESET": 0,
+        "EPIPE": 0,
+        "ETIMEDOUT": 0,
+        "other": 0,
+        "totalErrors": 0
+      },
+      "sanityPassed": true
+    }
+  ],
+  "global": {
+    "tDataLatencyMs": {
+      "count": 1364,
+      "p50": 0.769,
+      "p90": 1.316,
+      "p95": 1.653,
+      "p99": 2.767,
+      "p99_9": 3.533,
+      "p99_99": 3.669
+    },
+    "tConnLatencyMs": {
+      "count": 50,
+      "p50": 0.859,
+      "p90": 1.146,
+      "p95": 1.238,
+      "p99": 2.855,
+      "p99_9": 2.855,
+      "p99_99": 2.855
+    },
+    "errors": {
+      "ECONNRESET": 0,
+      "EPIPE": 0,
+      "ETIMEDOUT": 0,
+      "other": 0,
+      "totalErrors": 0
+    }
+  }
+}
