@@ -31,6 +31,7 @@ function parseArgs() {
     warmup: 5, // seconds warm-up
     output: null,
     ackEvery: 1, // Phase B: ACK every N messages (default 1)
+    parseMode: process.env.PARSE_MODE || 'regex', // Phase C: 'regex' or 'buffer'
     lbHost: '127.0.0.1',
     lbPort: 7000,
     lbHttpPort: 8000,
@@ -53,6 +54,8 @@ function parseArgs() {
       params.output = args[++i];
     } else if (arg === '--ack-every' && args[i + 1]) {
       params.ackEvery = parseInt(args[++i], 10);
+    } else if (arg === '--parse-mode' && args[i + 1]) {
+      params.parseMode = args[++i];
     } else if (arg === '--lb-host' && args[i + 1]) {
       params.lbHost = args[++i];
     } else if (arg === '--lb-port' && args[i + 1]) {
@@ -153,6 +156,7 @@ async function runBenchmark() {
   console.log(`   Warm-Up Window         : ${config.warmup} seconds per stage (samples discarded)`);
   console.log(`   Steady-State Window    : ${config.duration} seconds per stage`);
   console.log(`   ACK Policy             : Every ${config.ackEvery} msg(s) (${config.ackEvery === 1 ? '100% full-ACK' : (100 / config.ackEvery).toFixed(1) + '% sampled-ACK'})`);
+  console.log(`   Parse Mode             : ${config.parseMode}`);
   console.log(`================================================================================\n`);
 
   // Pre-flight check: Verify LB is reachable
@@ -174,14 +178,15 @@ async function runBenchmark() {
     process.exit(1);
   }
 
-  // Sync runtime configuration (ackEvery) to ingestion nodes
+  // Sync runtime configuration (ackEvery, parseMode) to ingestion nodes
   await Promise.all(
     config.nodeHttpPorts.map(port => postJson(`http://127.0.0.1:${port}/config`, {
-      ackEvery: config.ackEvery
+      ackEvery: config.ackEvery,
+      parseMode: config.parseMode
     }))
   );
 
-  console.log(`✅ Pre-flight checks passed: LB online with ${activeNodes.length} backend node(s) (ackEvery=${config.ackEvery}).\n`);
+  console.log(`✅ Pre-flight checks passed: LB online with ${activeNodes.length} backend node(s) (ackEvery=${config.ackEvery}, parseMode=${config.parseMode}).\n`);
 
   // Initialize shared simulator instance to ramp up across stages
   const initialTarget = config.stages[0];
@@ -489,6 +494,7 @@ async function runBenchmark() {
       warmupSec: config.warmup,
       holdDurationSec: config.duration,
       ackEvery: config.ackEvery,
+      parseMode: config.parseMode,
       nodesMonitored: config.nodeHttpPorts.map((p, i) => `D${i + 1} (:700${i + 1} / :${p})`)
     },
     stages: stageResults,

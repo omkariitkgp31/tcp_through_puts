@@ -12,6 +12,7 @@
     "lb": "node lb/tcp-load-balancer.js",
     "test:load": "node scripts/run-load-test.js",
     "test:metrics": "node scripts/benchmark-metrics.js",
+    "test:parse": "node scripts/test-parse-modes.js",
     "bench": "node scripts/run-latency-benchmark.js"
   },
   "keywords": [
