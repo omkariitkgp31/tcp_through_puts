@@ -30,6 +30,7 @@ function parseArgs() {
     duration: 30, // seconds steady-state hold
     warmup: 5, // seconds warm-up
     output: null,
+    ackEvery: 1, // Phase B: ACK every N messages (default 1)
     lbHost: '127.0.0.1',
     lbPort: 7000,
     lbHttpPort: 8000,
@@ -50,6 +51,8 @@ function parseArgs() {
       params.warmup = parseInt(args[++i], 10);
     } else if (arg === '--output' && args[i + 1]) {
       params.output = args[++i];
+    } else if (arg === '--ack-every' && args[i + 1]) {
+      params.ackEvery = parseInt(args[++i], 10);
     } else if (arg === '--lb-host' && args[i + 1]) {
       params.lbHost = args[++i];
     } else if (arg === '--lb-port' && args[i + 1]) {
@@ -67,7 +70,7 @@ function parseArgs() {
 }
 
 // -------------------------------------------------------------
-// 2. HTTP Polling Utilities
+// 2. HTTP Polling & Control Utilities
 // -------------------------------------------------------------
 function fetchJson(url, timeoutMs = 1500) {
   return new Promise((resolve) => {
@@ -87,8 +90,52 @@ function fetchJson(url, timeoutMs = 1500) {
   });
 }
 
+function postJson(urlStr, data, timeoutMs = 2000) {
+  return new Promise((resolve) => {
+    try {
+      const parsed = new URL(urlStr);
+      const body = JSON.stringify(data);
+      const req = http.request({
+        hostname: parsed.hostname,
+        port: parsed.port,
+        path: parsed.pathname,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body)
+        },
+        timeout: timeoutMs
+      }, (res) => {
+        let respData = '';
+        res.on('data', chunk => { respData += chunk; });
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(respData));
+          } catch {
+            resolve(null);
+          }
+        });
+      });
+      req.on('timeout', () => { req.destroy(); resolve(null); });
+      req.on('error', () => resolve(null));
+      req.write(body);
+      req.end();
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
+}
+
+function computeStats(samples) {
+  if (!samples || samples.length === 0) return { min: 0, avg: 0, max: 0 };
+  const min = Math.min(...samples);
+  const max = Math.max(...samples);
+  const avg = +(samples.reduce((a, b) => a + b, 0) / samples.length).toFixed(2);
+  return { min: +min.toFixed(2), avg, max: +max.toFixed(2) };
 }
 
 // -------------------------------------------------------------
@@ -105,6 +152,7 @@ async function runBenchmark() {
   console.log(`   Heartbeat Rate         : ${config.rate} msg/sec (${config.interval} ms interval)`);
   console.log(`   Warm-Up Window         : ${config.warmup} seconds per stage (samples discarded)`);
   console.log(`   Steady-State Window    : ${config.duration} seconds per stage`);
+  console.log(`   ACK Policy             : Every ${config.ackEvery} msg(s) (${config.ackEvery === 1 ? '100% full-ACK' : (100 / config.ackEvery).toFixed(1) + '% sampled-ACK'})`);
   console.log(`================================================================================\n`);
 
   // Pre-flight check: Verify LB is reachable
@@ -125,7 +173,15 @@ async function runBenchmark() {
     console.error(`❌ No healthy ingestion nodes detected on ports: ${config.nodeHttpPorts.join(', ')}`);
     process.exit(1);
   }
-  console.log(`✅ Pre-flight checks passed: LB online with ${activeNodes.length} backend node(s).\n`);
+
+  // Sync runtime configuration (ackEvery) to ingestion nodes
+  await Promise.all(
+    config.nodeHttpPorts.map(port => postJson(`http://127.0.0.1:${port}/config`, {
+      ackEvery: config.ackEvery
+    }))
+  );
+
+  console.log(`✅ Pre-flight checks passed: LB online with ${activeNodes.length} backend node(s) (ackEvery=${config.ackEvery}).\n`);
 
   // Initialize shared simulator instance to ramp up across stages
   const initialTarget = config.stages[0];
@@ -135,7 +191,8 @@ async function runBenchmark() {
     targetConnections: initialTarget,
     intervalMs: config.interval,
     rampRate: 150,
-    collectingSamples: true
+    collectingSamples: true,
+    ackEvery: config.ackEvery
   });
 
   simulator.start();
@@ -211,6 +268,7 @@ async function runBenchmark() {
         `\r  ⏱ Hold (${sec}/${config.duration}s) | ` +
         `Active Held: ${simulator.established.toString().padStart(4)} | ` +
         `MPS: ${totalNodeMps.toString().padStart(5)} | ` +
+        `LB CPU: ${(lbMetrics?.cpuPercent ?? 0).toFixed(1)}% | ` +
         `T_data P50: ${(currentStagePercentiles.tData.p50 || 0).toFixed(2)}ms | ` +
         `T_data P99: ${(currentStagePercentiles.tData.p99 || 0).toFixed(2)}ms`
       );
@@ -225,7 +283,30 @@ async function runBenchmark() {
     );
     const finalLbMetrics = await fetchJson(`http://${config.lbHost}:${config.lbHttpPort}/metrics`);
 
-    // Calculate per-node and aggregate throughput
+    // LB metrics stats across steady-state window
+    const lbCpuSamples = periodicSamples
+      .map(s => s.lbMetrics?.cpuPercent)
+      .filter(v => typeof v === 'number');
+    const lbRssSamples = periodicSamples
+      .map(s => s.lbMetrics?.memory?.rssMB)
+      .filter(v => typeof v === 'number');
+
+    const lbCpuStats = computeStats(lbCpuSamples);
+    const lbRssStats = computeStats(lbRssSamples);
+
+    const lbStats = {
+      cpuPercent: lbCpuStats.avg,
+      rssMB: lbRssStats.avg,
+      cpuStats: lbCpuStats,
+      memoryStats: lbRssStats,
+      timeSeries: periodicSamples.map(s => ({
+        second: s.second,
+        cpuPercent: s.lbMetrics?.cpuPercent ?? null,
+        rssMB: s.lbMetrics?.memory?.rssMB ?? null
+      }))
+    };
+
+    // Calculate per-node and aggregate throughput & CPU/memory
     const perNodeStats = {};
     let aggregateDeltaMsgs = 0;
     let aggregateDeltaBytes = 0;
@@ -253,13 +334,35 @@ async function runBenchmark() {
           ? +(nodeActiveSamples.reduce((a, b) => a + b, 0) / nodeActiveSamples.length).toFixed(1)
           : endNode.activeConnections || 0;
 
+        const nodeCpuSamples = periodicSamples
+          .map(s => s.nodeMetrics.find(n => n.nodeId === nodeId)?.cpuPercent)
+          .filter(v => typeof v === 'number');
+        const nodeRssSamples = periodicSamples
+          .map(s => s.nodeMetrics.find(n => n.nodeId === nodeId)?.memory?.rssMB)
+          .filter(v => typeof v === 'number');
+
+        const nodeCpuStats = computeStats(nodeCpuSamples);
+        const nodeRssStats = computeStats(nodeRssSamples);
+
+        const nodeTimeSeries = periodicSamples.map(s => {
+          const m = s.nodeMetrics.find(n => n.nodeId === nodeId);
+          return {
+            second: s.second,
+            cpuPercent: m?.cpuPercent ?? null,
+            rssMB: m?.memory?.rssMB ?? null
+          };
+        });
+
         perNodeStats[nodeId] = {
           port,
           mps,
           mbPerSec,
           activeConnections: avgActive,
-          cpuPercent: endNode.cpuPercent || 0,
-          rssMB: endNode.memory?.rssMB || 0
+          cpuPercent: nodeCpuStats.avg,
+          rssMB: nodeRssStats.avg,
+          cpuStats: nodeCpuStats,
+          memoryStats: nodeRssStats,
+          timeSeries: nodeTimeSeries
         };
       }
     }
@@ -269,6 +372,12 @@ async function runBenchmark() {
 
     // Sum of backend active connections
     const sumBackendActive = Object.values(perNodeStats).reduce((acc, n) => acc + n.activeConnections, 0);
+
+    // Compute worker average CPU across all backend nodes
+    const workerAvgCpus = Object.values(perNodeStats).map(n => n.cpuStats.avg);
+    const avgWorkerCpuPercent = workerAvgCpus.length > 0
+      ? +(workerAvgCpus.reduce((a, b) => a + b, 0) / workerAvgCpus.length).toFixed(2)
+      : 0;
 
     // Sanity check: sum of per-node active connections vs target connection count
     const divergence = Math.abs(sumBackendActive - targetConns);
@@ -291,6 +400,9 @@ async function runBenchmark() {
       durationSec: +steadyElapsedSec.toFixed(1),
       aggregateReqPerSec,
       aggregateMBPerSec,
+      avgLbCpuPercent: lbCpuStats.avg,
+      avgWorkerCpuPercent,
+      lbStats,
       perNodeThroughput: perNodeStats,
       tDataLatencyMs: stagePercentiles.tData,
       tConnLatencyMs: stagePercentiles.tConn,
@@ -299,7 +411,7 @@ async function runBenchmark() {
     };
 
     stageResults.push(stageResult);
-    console.log(`  Stage summary: Req/s: ${aggregateReqPerSec} | MB/s: ${aggregateMBPerSec} | T_data P50: ${stagePercentiles.tData.p50}ms | T_conn P50: ${stagePercentiles.tConn.p50}ms\n`);
+    console.log(`  Stage summary: Req/s: ${aggregateReqPerSec} | MB/s: ${aggregateMBPerSec} | LB CPU: ${lbCpuStats.avg}% | Worker Avg CPU: ${avgWorkerCpuPercent}% | T_data P50: ${stagePercentiles.tData.p50}ms | T_conn P50: ${stagePercentiles.tConn.p50}ms\n`);
   }
 
   // Teardown simulator
@@ -308,16 +420,18 @@ async function runBenchmark() {
   // -------------------------------------------------------------
   // 4. Print Terminal Summary Tables
   // -------------------------------------------------------------
-  console.log(`\n========================================================================================================================`);
+  console.log(`\n===============================================================================================================================================`);
   console.log(`📊 BENCHMARK SUMMARY TABLE: APPLICATION RTT (T_data) & THROUGHPUT`);
-  console.log(`========================================================================================================================`);
-  console.log(`Stage (Connections) | Req/s      | MB/s    | P50 (ms) | P90 (ms) | P95 (ms) | P99 (ms) | P99.9 (ms) | P99.99 (ms) | Errors/Timeouts`);
-  console.log(`------------------------------------------------------------------------------------------------------------------------`);
+  console.log(`===============================================================================================================================================`);
+  console.log(`Stage (Connections) | Req/s      | MB/s    | LB CPU%  | Wkr CPU% | P50 (ms) | P90 (ms) | P95 (ms) | P99 (ms) | P99.9 (ms) | P99.99 (ms) | Errors/Timeouts`);
+  console.log(`-----------------------------------------------------------------------------------------------------------------------------------------------`);
 
   for (const res of stageResults) {
     const colStage = `${res.connections} conns`.padEnd(19);
     const colReq = `${res.aggregateReqPerSec}`.padEnd(10);
     const colMB = `${res.aggregateMBPerSec}`.padEnd(7);
+    const colLbCpu = `${res.avgLbCpuPercent}%`.padEnd(8);
+    const colWkrCpu = `${res.avgWorkerCpuPercent}%`.padEnd(8);
     const colP50 = `${res.tDataLatencyMs.p50}`.padEnd(8);
     const colP90 = `${res.tDataLatencyMs.p90}`.padEnd(8);
     const colP95 = `${res.tDataLatencyMs.p95}`.padEnd(8);
@@ -326,9 +440,9 @@ async function runBenchmark() {
     const colP9999 = `${res.tDataLatencyMs.p99_99}`.padEnd(11);
     const colErrors = `${res.errors.totalErrors} (RST:${res.errors.ECONNRESET}, PIPE:${res.errors.EPIPE}, TIMEOUT:${res.errors.ETIMEDOUT})`;
 
-    console.log(`${colStage} | ${colReq} | ${colMB} | ${colP50} | ${colP90} | ${colP95} | ${colP99} | ${colP999} | ${colP9999} | ${colErrors}`);
+    console.log(`${colStage} | ${colReq} | ${colMB} | ${colLbCpu} | ${colWkrCpu} | ${colP50} | ${colP90} | ${colP95} | ${colP99} | ${colP999} | ${colP9999} | ${colErrors}`);
   }
-  console.log(`========================================================================================================================\n`);
+  console.log(`===============================================================================================================================================\n`);
 
   console.log(`========================================================================================================================`);
   console.log(`🔌 BENCHMARK SUMMARY TABLE: TCP HANDSHAKE & ROUTING LATENCY (T_conn)`);
@@ -374,6 +488,7 @@ async function runBenchmark() {
       intervalMs: config.interval,
       warmupSec: config.warmup,
       holdDurationSec: config.duration,
+      ackEvery: config.ackEvery,
       nodesMonitored: config.nodeHttpPorts.map((p, i) => `D${i + 1} (:700${i + 1} / :${p})`)
     },
     stages: stageResults,

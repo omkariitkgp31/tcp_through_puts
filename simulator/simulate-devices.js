@@ -50,6 +50,7 @@ class DeviceSimulator {
     this.rampRate = options.rampRate || 100;
     this.autoReconnect = options.autoReconnect || false;
     this.collectingSamples = options.collectingSamples !== undefined ? options.collectingSamples : true;
+    this.ackEvery = options.ackEvery !== undefined ? options.ackEvery : 1;
 
     // HDR Histograms (recorded in microseconds)
     this.tConnHist = createHistogram();
@@ -253,8 +254,11 @@ class DeviceSimulator {
         }
       }) + '\n';
 
-      const dispatchTime = process.hrtime.bigint();
-      dispatchMap.set(seq, dispatchTime);
+      const shouldTrackAck = (this.ackEvery <= 1) || (seq % this.ackEvery === 0);
+      if (shouldTrackAck) {
+        const dispatchTime = process.hrtime.bigint();
+        dispatchMap.set(seq, dispatchTime);
+      }
 
       const canWrite = socket.write(payload, () => {
         this.totalMessagesSent++;
@@ -371,6 +375,7 @@ if (require.main === module) {
   const RAMP_RATE = parseInt(getArg('--ramp-rate', process.env.RAMP_RATE || '100'), 10);
   const DURATION_SEC = parseInt(getArg('--duration', process.env.DURATION || '0'), 10);
   const AUTO_RECONNECT = hasArg('--reconnect') || process.env.AUTO_RECONNECT === 'true';
+  const ACK_EVERY = parseInt(getArg('--ack-every', process.env.ACK_EVERY || '1'), 10);
 
   const simulator = new DeviceSimulator({
     host: HOST,
@@ -378,7 +383,8 @@ if (require.main === module) {
     targetConnections: TARGET_CONNECTIONS,
     intervalMs: INTERVAL_MS,
     rampRate: RAMP_RATE,
-    autoReconnect: AUTO_RECONNECT
+    autoReconnect: AUTO_RECONNECT,
+    ackEvery: ACK_EVERY
   });
 
   const startTime = Date.now();

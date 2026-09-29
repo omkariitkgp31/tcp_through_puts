@@ -38,6 +38,24 @@ let totalIncomingConns = 0;
 let activeIncomingConns = 0;
 let totalBytesBridged = 0;
 
+// CPU calculation state
+let lastCpuUsage = process.cpuUsage();
+let lastCpuTime = Date.now();
+let currentCpuPercent = '0.0';
+
+setInterval(() => {
+  const cpuNow = process.cpuUsage();
+  const timeNow = Date.now();
+  const userDiff = cpuNow.user - lastCpuUsage.user;
+  const sysDiff = cpuNow.system - lastCpuUsage.system;
+  const timeDiff = (timeNow - lastCpuTime) * 1000;
+  if (timeDiff > 0) {
+    currentCpuPercent = (((userDiff + sysDiff) / timeDiff) * 100).toFixed(1);
+  }
+  lastCpuUsage = cpuNow;
+  lastCpuTime = timeNow;
+}, 1000);
+
 // -------------------------------------------------------------
 // 1. Health Checker
 // -------------------------------------------------------------
@@ -224,6 +242,8 @@ const httpServer = http.createServer((req, res) => {
         rssMB: parseFloat((mem.rss / (1024 * 1024)).toFixed(2)),
         heapUsedMB: parseFloat((mem.heapUsed / (1024 * 1024)).toFixed(2))
       },
+      cpuPercent: parseFloat(currentCpuPercent),
+      pid: process.pid,
       uptimeSeconds: Math.floor(process.uptime())
     };
 

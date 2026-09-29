@@ -21,6 +21,8 @@ const NODE_ID = getArg('--node-id', process.env.NODE_ID || 'D1');
 const TCP_PORT = parseInt(getArg('--tcp-port', process.env.TCP_PORT || '7001'), 10);
 const HTTP_PORT = parseInt(getArg('--http-port', process.env.HTTP_PORT || '8001'), 10);
 const HOST = getArg('--host', process.env.HOST || '0.0.0.0');
+let ACK_EVERY = parseInt(getArg('--ack-every', process.env.ACK_EVERY || '1'), 10);
+let PARSE_MODE = getArg('--parse-mode', process.env.PARSE_MODE || 'regex');
 
 // Metrics state
 let activeConnections = 0;
@@ -65,7 +67,10 @@ const tcpServer = net.createServer({ noDelay: true, keepAlive: true }, (socket) 
 
       const match = /(?:^|[^a-zA-Z0-9_])"?seq"?\s*[:= ]\s*(\d+)/i.exec(line);
       if (match && socket.writable) {
-        socket.write('ACK ' + match[1] + '\n');
+        const seq = parseInt(match[1], 10);
+        if (ACK_EVERY <= 1 || seq % ACK_EVERY === 0) {
+          socket.write('ACK ' + match[1] + '\n');
+        }
       }
     }
     if (buf.length > 65536) buf = '';
@@ -104,6 +109,34 @@ const httpServer = http.createServer((req, res) => {
     return;
   }
 
+  if (url === '/config') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const cfg = JSON.parse(body || '{}');
+          if (typeof cfg.ackEvery === 'number' && cfg.ackEvery >= 1) {
+            ACK_EVERY = cfg.ackEvery;
+          }
+          if (typeof cfg.parseMode === 'string') {
+            PARSE_MODE = cfg.parseMode;
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'ok', ackEvery: ACK_EVERY, parseMode: PARSE_MODE }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ackEvery: ACK_EVERY, parseMode: PARSE_MODE }));
+      return;
+    }
+  }
+
   if (url === '/metrics') {
     const mem = process.memoryUsage();
     const metricsData = {
@@ -111,6 +144,8 @@ const httpServer = http.createServer((req, res) => {
       pid: process.pid,
       tcpPort: TCP_PORT,
       httpPort: HTTP_PORT,
+      ackEvery: ACK_EVERY,
+      parseMode: PARSE_MODE,
       activeConnections,
       totalConnections,
       messagesPerSec: currentMsgRate,
@@ -136,7 +171,7 @@ const httpServer = http.createServer((req, res) => {
   }
 
   res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not Found', endpoints: ['/health', '/metrics'] }));
+  res.end(JSON.stringify({ error: 'Not Found', endpoints: ['/health', '/metrics', '/config'] }));
 });
 
 httpServer.on('error', (err) => {
