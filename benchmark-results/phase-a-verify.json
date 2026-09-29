@@ -1,0 +1,433 @@
+{
+  "timestamp": "2026-09-28T21:31:23.753Z",
+  "metadata": {
+    "lbEndpoint": "127.0.0.1:7000",
+    "stages": [
+      400
+    ],
+    "targetRatePerDevice": 5,
+    "intervalMs": 200,
+    "warmupSec": 2,
+    "holdDurationSec": 10,
+    "nodesMonitored": [
+      "D1 (:7001 / :8001)",
+      "D2 (:7002 / :8002)",
+      "D3 (:7003 / :8003)",
+      "D4 (:7004 / :8004)"
+    ]
+  },
+  "stages": [
+    {
+      "stage": 1,
+      "connections": 400,
+      "activeHeld": 400,
+      "sumBackendActive": 400,
+      "durationSec": 10.1,
+      "aggregateReqPerSec": 1935.4,
+      "aggregateMBPerSec": 1.46,
+      "avgLbCpuPercent": 14.79,
+      "avgWorkerCpuPercent": 4.14,
+      "lbStats": {
+        "cpuPercent": 14.79,
+        "rssMB": 70.43,
+        "cpuStats": {
+          "min": 7.8,
+          "avg": 14.79,
+          "max": 21.9
+        },
+        "memoryStats": {
+          "min": 69.89,
+          "avg": 70.43,
+          "max": 70.91
+        },
+        "timeSeries": [
+          {
+            "second": 1,
+            "cpuPercent": 7.8,
+            "rssMB": 70.91
+          },
+          {
+            "second": 2,
+            "cpuPercent": 12.5,
+            "rssMB": 70.09
+          },
+          {
+            "second": 3,
+            "cpuPercent": 18.8,
+            "rssMB": 70.43
+          },
+          {
+            "second": 4,
+            "cpuPercent": 20.1,
+            "rssMB": 70.64
+          },
+          {
+            "second": 5,
+            "cpuPercent": 12.4,
+            "rssMB": 70.77
+          },
+          {
+            "second": 6,
+            "cpuPercent": 21.9,
+            "rssMB": 69.99
+          },
+          {
+            "second": 7,
+            "cpuPercent": 12.2,
+            "rssMB": 69.89
+          },
+          {
+            "second": 8,
+            "cpuPercent": 15.7,
+            "rssMB": 70.18
+          },
+          {
+            "second": 9,
+            "cpuPercent": 10.9,
+            "rssMB": 70.64
+          },
+          {
+            "second": 10,
+            "cpuPercent": 15.6,
+            "rssMB": 70.81
+          }
+        ]
+      },
+      "perNodeThroughput": {
+        "D1": {
+          "port": 8001,
+          "mps": 483.5,
+          "mbPerSec": 0.365,
+          "activeConnections": 100,
+          "cpuPercent": 3.9,
+          "rssMB": 64.4,
+          "cpuStats": {
+            "min": 1.6,
+            "avg": 3.9,
+            "max": 10.8
+          },
+          "memoryStats": {
+            "min": 64.16,
+            "avg": 64.4,
+            "max": 64.57
+          },
+          "timeSeries": [
+            {
+              "second": 1,
+              "cpuPercent": 4.7,
+              "rssMB": 64.4
+            },
+            {
+              "second": 2,
+              "cpuPercent": 3.1,
+              "rssMB": 64.48
+            },
+            {
+              "second": 3,
+              "cpuPercent": 1.6,
+              "rssMB": 64.45
+            },
+            {
+              "second": 4,
+              "cpuPercent": 10.8,
+              "rssMB": 64.42
+            },
+            {
+              "second": 5,
+              "cpuPercent": 1.6,
+              "rssMB": 64.32
+            },
+            {
+              "second": 6,
+              "cpuPercent": 6.2,
+              "rssMB": 64.26
+            },
+            {
+              "second": 7,
+              "cpuPercent": 3.1,
+              "rssMB": 64.16
+            },
+            {
+              "second": 8,
+              "cpuPercent": 1.6,
+              "rssMB": 64.36
+            },
+            {
+              "second": 9,
+              "cpuPercent": 3.1,
+              "rssMB": 64.57
+            },
+            {
+              "second": 10,
+              "cpuPercent": 3.2,
+              "rssMB": 64.56
+            }
+          ]
+        },
+        "D2": {
+          "port": 8002,
+          "mps": 484,
+          "mbPerSec": 0.365,
+          "activeConnections": 100,
+          "cpuPercent": 4.22,
+          "rssMB": 64.93,
+          "cpuStats": {
+            "min": 0,
+            "avg": 4.22,
+            "max": 10.9
+          },
+          "memoryStats": {
+            "min": 64.68,
+            "avg": 64.93,
+            "max": 65.25
+          },
+          "timeSeries": [
+            {
+              "second": 1,
+              "cpuPercent": 10.9,
+              "rssMB": 64.87
+            },
+            {
+              "second": 2,
+              "cpuPercent": 4.7,
+              "rssMB": 64.95
+            },
+            {
+              "second": 3,
+              "cpuPercent": 3.1,
+              "rssMB": 64.73
+            },
+            {
+              "second": 4,
+              "cpuPercent": 6.2,
+              "rssMB": 64.88
+            },
+            {
+              "second": 5,
+              "cpuPercent": 3.2,
+              "rssMB": 64.93
+            },
+            {
+              "second": 6,
+              "cpuPercent": 6.2,
+              "rssMB": 64.97
+            },
+            {
+              "second": 7,
+              "cpuPercent": 3.2,
+              "rssMB": 65.11
+            },
+            {
+              "second": 8,
+              "cpuPercent": 3.1,
+              "rssMB": 65.25
+            },
+            {
+              "second": 9,
+              "cpuPercent": 1.6,
+              "rssMB": 64.68
+            },
+            {
+              "second": 10,
+              "cpuPercent": 0,
+              "rssMB": 64.96
+            }
+          ]
+        },
+        "D3": {
+          "port": 8003,
+          "mps": 484.1,
+          "mbPerSec": 0.365,
+          "activeConnections": 100,
+          "cpuPercent": 3.59,
+          "rssMB": 64.6,
+          "cpuStats": {
+            "min": 0,
+            "avg": 3.59,
+            "max": 9.3
+          },
+          "memoryStats": {
+            "min": 64.5,
+            "avg": 64.6,
+            "max": 64.76
+          },
+          "timeSeries": [
+            {
+              "second": 1,
+              "cpuPercent": 0,
+              "rssMB": 64.76
+            },
+            {
+              "second": 2,
+              "cpuPercent": 1.6,
+              "rssMB": 64.54
+            },
+            {
+              "second": 3,
+              "cpuPercent": 4.7,
+              "rssMB": 64.69
+            },
+            {
+              "second": 4,
+              "cpuPercent": 4.7,
+              "rssMB": 64.63
+            },
+            {
+              "second": 5,
+              "cpuPercent": 3.2,
+              "rssMB": 64.5
+            },
+            {
+              "second": 6,
+              "cpuPercent": 1.5,
+              "rssMB": 64.66
+            },
+            {
+              "second": 7,
+              "cpuPercent": 4.7,
+              "rssMB": 64.51
+            },
+            {
+              "second": 8,
+              "cpuPercent": 9.3,
+              "rssMB": 64.61
+            },
+            {
+              "second": 9,
+              "cpuPercent": 0,
+              "rssMB": 64.53
+            },
+            {
+              "second": 10,
+              "cpuPercent": 6.2,
+              "rssMB": 64.57
+            }
+          ]
+        },
+        "D4": {
+          "port": 8004,
+          "mps": 483.8,
+          "mbPerSec": 0.365,
+          "activeConnections": 100,
+          "cpuPercent": 4.84,
+          "rssMB": 64.45,
+          "cpuStats": {
+            "min": 0,
+            "avg": 4.84,
+            "max": 7.9
+          },
+          "memoryStats": {
+            "min": 64.32,
+            "avg": 64.45,
+            "max": 64.56
+          },
+          "timeSeries": [
+            {
+              "second": 1,
+              "cpuPercent": 3.2,
+              "rssMB": 64.42
+            },
+            {
+              "second": 2,
+              "cpuPercent": 6.3,
+              "rssMB": 64.34
+            },
+            {
+              "second": 3,
+              "cpuPercent": 1.5,
+              "rssMB": 64.5
+            },
+            {
+              "second": 4,
+              "cpuPercent": 7.6,
+              "rssMB": 64.54
+            },
+            {
+              "second": 5,
+              "cpuPercent": 7.9,
+              "rssMB": 64.49
+            },
+            {
+              "second": 6,
+              "cpuPercent": 6.3,
+              "rssMB": 64.56
+            },
+            {
+              "second": 7,
+              "cpuPercent": 0,
+              "rssMB": 64.35
+            },
+            {
+              "second": 8,
+              "cpuPercent": 7.7,
+              "rssMB": 64.5
+            },
+            {
+              "second": 9,
+              "cpuPercent": 4.7,
+              "rssMB": 64.32
+            },
+            {
+              "second": 10,
+              "cpuPercent": 3.2,
+              "rssMB": 64.52
+            }
+          ]
+        }
+      },
+      "tDataLatencyMs": {
+        "count": 19558,
+        "p50": 2.737,
+        "p90": 5.455,
+        "p95": 6.459,
+        "p99": 9.783,
+        "p99_9": 12.855,
+        "p99_99": 13.295
+      },
+      "tConnLatencyMs": {
+        "count": 400,
+        "p50": 0.985,
+        "p90": 1.716,
+        "p95": 1.993,
+        "p99": 2.895,
+        "p99_9": 4.187,
+        "p99_99": 4.187
+      },
+      "errors": {
+        "ECONNRESET": 0,
+        "EPIPE": 0,
+        "ETIMEDOUT": 0,
+        "other": 0,
+        "totalErrors": 0
+      },
+      "sanityPassed": true
+    }
+  ],
+  "global": {
+    "tDataLatencyMs": {
+      "count": 25630,
+      "p50": 2.297,
+      "p90": 5.059,
+      "p95": 6.023,
+      "p99": 9.183,
+      "p99_9": 12.767,
+      "p99_99": 13.247
+    },
+    "tConnLatencyMs": {
+      "count": 400,
+      "p50": 0.985,
+      "p90": 1.716,
+      "p95": 1.993,
+      "p99": 2.895,
+      "p99_9": 4.187,
+      "p99_99": 4.187
+    },
+    "errors": {
+      "ECONNRESET": 0,
+      "EPIPE": 0,
+      "ETIMEDOUT": 0,
+      "other": 0,
+      "totalErrors": 0
+    }
+  }
+}

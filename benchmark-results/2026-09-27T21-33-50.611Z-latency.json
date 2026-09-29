@@ -1,0 +1,397 @@
+{
+  "timestamp": "2026-09-27T21:33:50.611Z",
+  "metadata": {
+    "lbEndpoint": "127.0.0.1:7000",
+    "stages": [
+      50,
+      100,
+      200,
+      400,
+      800
+    ],
+    "targetRatePerDevice": 5,
+    "intervalMs": 200,
+    "warmupSec": 2,
+    "holdDurationSec": 10,
+    "nodesMonitored": [
+      "D1 (:7001 / :8001)",
+      "D2 (:7002 / :8002)",
+      "D3 (:7003 / :8003)",
+      "D4 (:7004 / :8004)"
+    ]
+  },
+  "stages": [
+    {
+      "stage": 1,
+      "connections": 50,
+      "activeHeld": 50,
+      "sumBackendActive": 50,
+      "durationSec": 10.1,
+      "aggregateReqPerSec": 245.6,
+      "aggregateMBPerSec": 0.19,
+      "perNodeThroughput": {
+        "D1": {
+          "port": 8001,
+          "mps": 59,
+          "mbPerSec": 0.044,
+          "activeConnections": 12,
+          "cpuPercent": 7.7,
+          "rssMB": 61.16
+        },
+        "D2": {
+          "port": 8002,
+          "mps": 59,
+          "mbPerSec": 0.044,
+          "activeConnections": 12,
+          "cpuPercent": 6.3,
+          "rssMB": 61.16
+        },
+        "D3": {
+          "port": 8003,
+          "mps": 63.8,
+          "mbPerSec": 0.048,
+          "activeConnections": 13,
+          "cpuPercent": 0,
+          "rssMB": 61.04
+        },
+        "D4": {
+          "port": 8004,
+          "mps": 63.8,
+          "mbPerSec": 0.048,
+          "activeConnections": 13,
+          "cpuPercent": 3.1,
+          "rssMB": 61.23
+        }
+      },
+      "tDataLatencyMs": {
+        "count": 2482,
+        "p50": 0.574,
+        "p90": 0.961,
+        "p95": 1.132,
+        "p99": 2.026,
+        "p99_9": 3.307,
+        "p99_99": 3.487
+      },
+      "tConnLatencyMs": {
+        "count": 50,
+        "p50": 0.869,
+        "p90": 1.271,
+        "p95": 1.489,
+        "p99": 2.459,
+        "p99_9": 2.459,
+        "p99_99": 2.459
+      },
+      "errors": {
+        "ECONNRESET": 0,
+        "EPIPE": 0,
+        "ETIMEDOUT": 0,
+        "other": 0,
+        "totalErrors": 0
+      },
+      "sanityPassed": true
+    },
+    {
+      "stage": 2,
+      "connections": 100,
+      "activeHeld": 100,
+      "sumBackendActive": 100,
+      "durationSec": 10.1,
+      "aggregateReqPerSec": 488.7,
+      "aggregateMBPerSec": 0.37,
+      "perNodeThroughput": {
+        "D1": {
+          "port": 8001,
+          "mps": 122.1,
+          "mbPerSec": 0.092,
+          "activeConnections": 25,
+          "cpuPercent": 3,
+          "rssMB": 60.96
+        },
+        "D2": {
+          "port": 8002,
+          "mps": 122.3,
+          "mbPerSec": 0.092,
+          "activeConnections": 25,
+          "cpuPercent": 3.2,
+          "rssMB": 61.25
+        },
+        "D3": {
+          "port": 8003,
+          "mps": 122.1,
+          "mbPerSec": 0.092,
+          "activeConnections": 25,
+          "cpuPercent": 0,
+          "rssMB": 61.05
+        },
+        "D4": {
+          "port": 8004,
+          "mps": 122,
+          "mbPerSec": 0.092,
+          "activeConnections": 25,
+          "cpuPercent": 0,
+          "rssMB": 61.34
+        }
+      },
+      "tDataLatencyMs": {
+        "count": 4925,
+        "p50": 0.788,
+        "p90": 1.555,
+        "p95": 1.869,
+        "p99": 2.517,
+        "p99_9": 3.955,
+        "p99_99": 4.319
+      },
+      "tConnLatencyMs": {
+        "count": 50,
+        "p50": 0.91,
+        "p90": 1.309,
+        "p95": 1.455,
+        "p99": 1.918,
+        "p99_9": 1.918,
+        "p99_99": 1.918
+      },
+      "errors": {
+        "ECONNRESET": 0,
+        "EPIPE": 0,
+        "ETIMEDOUT": 0,
+        "other": 0,
+        "totalErrors": 0
+      },
+      "sanityPassed": true
+    },
+    {
+      "stage": 3,
+      "connections": 200,
+      "activeHeld": 200,
+      "sumBackendActive": 200,
+      "durationSec": 10.1,
+      "aggregateReqPerSec": 984,
+      "aggregateMBPerSec": 0.74,
+      "perNodeThroughput": {
+        "D1": {
+          "port": 8001,
+          "mps": 246.1,
+          "mbPerSec": 0.186,
+          "activeConnections": 50,
+          "cpuPercent": 0,
+          "rssMB": 61.51
+        },
+        "D2": {
+          "port": 8002,
+          "mps": 246.3,
+          "mbPerSec": 0.186,
+          "activeConnections": 50,
+          "cpuPercent": 1.6,
+          "rssMB": 61.27
+        },
+        "D3": {
+          "port": 8003,
+          "mps": 245.8,
+          "mbPerSec": 0.186,
+          "activeConnections": 50,
+          "cpuPercent": 1.5,
+          "rssMB": 61.19
+        },
+        "D4": {
+          "port": 8004,
+          "mps": 246,
+          "mbPerSec": 0.186,
+          "activeConnections": 50,
+          "cpuPercent": 0,
+          "rssMB": 61.21
+        }
+      },
+      "tDataLatencyMs": {
+        "count": 9946,
+        "p50": 1.359,
+        "p90": 2.705,
+        "p95": 3.459,
+        "p99": 4.687,
+        "p99_9": 8.099,
+        "p99_99": 8.151
+      },
+      "tConnLatencyMs": {
+        "count": 100,
+        "p50": 1.024,
+        "p90": 1.698,
+        "p95": 2.038,
+        "p99": 3.373,
+        "p99_9": 3.653,
+        "p99_99": 3.653
+      },
+      "errors": {
+        "ECONNRESET": 0,
+        "EPIPE": 0,
+        "ETIMEDOUT": 0,
+        "other": 0,
+        "totalErrors": 0
+      },
+      "sanityPassed": true
+    },
+    {
+      "stage": 4,
+      "connections": 400,
+      "activeHeld": 400,
+      "sumBackendActive": 400,
+      "durationSec": 10.1,
+      "aggregateReqPerSec": 1968.2,
+      "aggregateMBPerSec": 1.49,
+      "perNodeThroughput": {
+        "D1": {
+          "port": 8001,
+          "mps": 492.1,
+          "mbPerSec": 0.371,
+          "activeConnections": 100,
+          "cpuPercent": 7.7,
+          "rssMB": 61.73
+        },
+        "D2": {
+          "port": 8002,
+          "mps": 491.9,
+          "mbPerSec": 0.371,
+          "activeConnections": 100,
+          "cpuPercent": 4.6,
+          "rssMB": 61.86
+        },
+        "D3": {
+          "port": 8003,
+          "mps": 492.1,
+          "mbPerSec": 0.371,
+          "activeConnections": 100,
+          "cpuPercent": 6.2,
+          "rssMB": 61.63
+        },
+        "D4": {
+          "port": 8004,
+          "mps": 492,
+          "mbPerSec": 0.371,
+          "activeConnections": 100,
+          "cpuPercent": 6.2,
+          "rssMB": 61.78
+        }
+      },
+      "tDataLatencyMs": {
+        "count": 19940,
+        "p50": 2.069,
+        "p90": 4.391,
+        "p95": 5.171,
+        "p99": 6.607,
+        "p99_9": 9.431,
+        "p99_99": 9.559
+      },
+      "tConnLatencyMs": {
+        "count": 200,
+        "p50": 1.107,
+        "p90": 2.034,
+        "p95": 2.405,
+        "p99": 3.163,
+        "p99_9": 4.967,
+        "p99_99": 4.967
+      },
+      "errors": {
+        "ECONNRESET": 0,
+        "EPIPE": 0,
+        "ETIMEDOUT": 0,
+        "other": 0,
+        "totalErrors": 0
+      },
+      "sanityPassed": true
+    },
+    {
+      "stage": 5,
+      "connections": 800,
+      "activeHeld": 800,
+      "sumBackendActive": 800,
+      "durationSec": 10.1,
+      "aggregateReqPerSec": 3923.1,
+      "aggregateMBPerSec": 2.96,
+      "perNodeThroughput": {
+        "D1": {
+          "port": 8001,
+          "mps": 980.7,
+          "mbPerSec": 0.74,
+          "activeConnections": 200,
+          "cpuPercent": 11,
+          "rssMB": 63.43
+        },
+        "D2": {
+          "port": 8002,
+          "mps": 980.7,
+          "mbPerSec": 0.74,
+          "activeConnections": 200,
+          "cpuPercent": 9.5,
+          "rssMB": 63.88
+        },
+        "D3": {
+          "port": 8003,
+          "mps": 981.1,
+          "mbPerSec": 0.741,
+          "activeConnections": 200,
+          "cpuPercent": 10.9,
+          "rssMB": 63.98
+        },
+        "D4": {
+          "port": 8004,
+          "mps": 980.7,
+          "mbPerSec": 0.74,
+          "activeConnections": 200,
+          "cpuPercent": 6.2,
+          "rssMB": 63.85
+        }
+      },
+      "tDataLatencyMs": {
+        "count": 39645,
+        "p50": 4.843,
+        "p90": 10.239,
+        "p95": 12.175,
+        "p99": 15.767,
+        "p99_9": 21.071,
+        "p99_99": 22.879
+      },
+      "tConnLatencyMs": {
+        "count": 400,
+        "p50": 1.239,
+        "p90": 2.629,
+        "p95": 2.899,
+        "p99": 4.243,
+        "p99_9": 6.091,
+        "p99_99": 6.091
+      },
+      "errors": {
+        "ECONNRESET": 0,
+        "EPIPE": 0,
+        "ETIMEDOUT": 0,
+        "other": 0,
+        "totalErrors": 0
+      },
+      "sanityPassed": true
+    }
+  ],
+  "global": {
+    "tDataLatencyMs": {
+      "count": 98039,
+      "p50": 2.613,
+      "p90": 7.319,
+      "p95": 9.583,
+      "p99": 13.535,
+      "p99_9": 20.495,
+      "p99_99": 22.511
+    },
+    "tConnLatencyMs": {
+      "count": 800,
+      "p50": 1.076,
+      "p90": 2.339,
+      "p95": 2.721,
+      "p99": 3.913,
+      "p99_9": 6.091,
+      "p99_99": 6.091
+    },
+    "errors": {
+      "ECONNRESET": 0,
+      "EPIPE": 0,
+      "ETIMEDOUT": 0,
+      "other": 0,
+      "totalErrors": 0
+    }
+  }
+}

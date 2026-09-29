@@ -11,7 +11,9 @@
     "delete:pm2": "pm2 delete ecosystem.config.js",
     "lb": "node lb/tcp-load-balancer.js",
     "test:load": "node scripts/run-load-test.js",
-    "test:metrics": "node scripts/benchmark-metrics.js"
+    "test:metrics": "node scripts/benchmark-metrics.js",
+    "test:parse": "node scripts/test-parse-modes.js",
+    "bench": "node scripts/run-latency-benchmark.js"
   },
   "keywords": [
     "tcp",
@@ -24,6 +26,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "hdr-histogram-js": "^3.0.1",
     "pm2": "^5.4.3"
   },
   "devDependencies": {

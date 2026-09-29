@@ -21,6 +21,8 @@ const NODE_ID = getArg('--node-id', process.env.NODE_ID || 'D1');
 const TCP_PORT = parseInt(getArg('--tcp-port', process.env.TCP_PORT || '7001'), 10);
 const HTTP_PORT = parseInt(getArg('--http-port', process.env.HTTP_PORT || '8001'), 10);
 const HOST = getArg('--host', process.env.HOST || '0.0.0.0');
+let ACK_EVERY = parseInt(getArg('--ack-every', process.env.ACK_EVERY || '1'), 10);
+let PARSE_MODE = getArg('--parse-mode', process.env.PARSE_MODE || 'regex');
 
 // Metrics state
 let activeConnections = 0;
@@ -39,6 +41,97 @@ let lastCpuTime = Date.now();
 let currentCpuPercent = '0.0';
 
 // -------------------------------------------------------------
+// Sequence Extraction Functions (Regex & Buffer Scanning)
+// -------------------------------------------------------------
+function extractSeqRegex(line) {
+  const match = /(?:^|[^a-zA-Z0-9_])"?seq"?\s*[:= ]\s*(\d+)/i.exec(line);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+function isAlphaNumericOrUnderscore(byte) {
+  return (
+    (byte >= 0x30 && byte <= 0x39) || // 0-9
+    (byte >= 0x41 && byte <= 0x5A) || // A-Z
+    (byte >= 0x61 && byte <= 0x7A) || // a-z
+    byte === 0x5F                      // _
+  );
+}
+
+function isWhitespace(byte) {
+  return byte === 0x20 || byte === 0x09 || byte === 0x0D || byte === 0x0A;
+}
+
+function extractSeqBuffer(buf, start = 0, end = buf.length) {
+  const len = end - 2; // need at least 3 chars for 'seq'
+  for (let i = start; i < len; i++) {
+    const b0 = buf[i];
+    if (b0 === 0x73 || b0 === 0x53) { // 's' or 'S'
+      const b1 = buf[i + 1];
+      if (b1 === 0x65 || b1 === 0x45) { // 'e' or 'E'
+        const b2 = buf[i + 2];
+        if (b2 === 0x71 || b2 === 0x51) { // 'q' or 'Q'
+          // Preceding boundary check: (?:^|[^a-zA-Z0-9_])
+          let validStart = false;
+          if (i === start) {
+            validStart = true;
+          } else {
+            const prev = buf[i - 1];
+            if (prev === 0x22) { // '"'
+              if (i - 1 === start || !isAlphaNumericOrUnderscore(buf[i - 2])) {
+                validStart = true;
+              }
+            } else if (!isAlphaNumericOrUnderscore(prev)) {
+              validStart = true;
+            }
+          }
+
+          if (!validStart) continue;
+
+          let p = i + 3;
+          // Trailing quote if any
+          if (p < end && buf[p] === 0x22) { // '"'
+            p++;
+          }
+
+          // Followed by alphanumeric or underscore means not a boundary
+          if (p < end && isAlphaNumericOrUnderscore(buf[p])) {
+            continue;
+          }
+
+          // Skip whitespace
+          while (p < end && isWhitespace(buf[p])) {
+            p++;
+          }
+
+          // Separator: ':', '=', or whitespace was already separator
+          if (p < end && (buf[p] === 0x3A || buf[p] === 0x3D)) { // ':' or '='
+            p++;
+            while (p < end && isWhitespace(buf[p])) {
+              p++;
+            }
+          }
+
+          // Parse digits via byte arithmetic (no toString, no regex)
+          if (p < end && buf[p] >= 0x30 && buf[p] <= 0x39) {
+            let seq = 0;
+            let digitCount = 0;
+            while (p < end && buf[p] >= 0x30 && buf[p] <= 0x39) {
+              seq = seq * 10 + (buf[p] - 0x30);
+              digitCount++;
+              p++;
+            }
+            if (digitCount > 0) {
+              return seq;
+            }
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// -------------------------------------------------------------
 // 1. Raw TCP Server
 // -------------------------------------------------------------
 const tcpServer = net.createServer({ noDelay: true, keepAlive: true }, (socket) => {
@@ -48,18 +141,63 @@ const tcpServer = net.createServer({ noDelay: true, keepAlive: true }, (socket) 
   socket.setKeepAlive(true, 10000);
   socket.setNoDelay(true);
 
+  // Parsing buffers for both modes
+  let strBuf = '';
+  let remainderBuf = null;
+
   socket.on('data', (chunk) => {
     totalBytes += chunk.length;
     bytesInLastSecond += chunk.length;
 
-    // Count newline-delimited messages or fallback to 1
-    let count = 0;
-    for (let i = 0; i < chunk.length; i++) {
-      if (chunk[i] === 10) count++; // \n
+    if (PARSE_MODE === 'buffer') {
+      const dataBuf = remainderBuf ? Buffer.concat([remainderBuf, chunk]) : chunk;
+      remainderBuf = null;
+
+      let start = 0;
+      let newlineIdx;
+      while ((newlineIdx = dataBuf.indexOf(0x0A, start)) !== -1) {
+        if (newlineIdx > start) {
+          totalMessages++;
+          messagesInLastSecond++;
+
+          const seq = extractSeqBuffer(dataBuf, start, newlineIdx);
+          if (seq !== null && socket.writable) {
+            if (ACK_EVERY <= 1 || seq % ACK_EVERY === 0) {
+              socket.write('ACK ' + seq + '\n');
+            }
+          }
+        }
+        start = newlineIdx + 1;
+      }
+
+      if (start < dataBuf.length) {
+        if (dataBuf.length - start > 65536) {
+          remainderBuf = null;
+        } else {
+          remainderBuf = dataBuf.subarray(start);
+        }
+      }
+    } else {
+      // Existing regex path
+      strBuf += chunk.toString('utf8');
+      let idx;
+      while ((idx = strBuf.indexOf('\n')) !== -1) {
+        const line = strBuf.slice(0, idx);
+        strBuf = strBuf.slice(idx + 1);
+        if (line.length === 0) continue;
+
+        totalMessages++;
+        messagesInLastSecond++;
+
+        const seq = extractSeqRegex(line);
+        if (seq !== null && socket.writable) {
+          if (ACK_EVERY <= 1 || seq % ACK_EVERY === 0) {
+            socket.write('ACK ' + seq + '\n');
+          }
+        }
+      }
+      if (strBuf.length > 65536) strBuf = '';
     }
-    const msgs = count > 0 ? count : 1;
-    totalMessages += msgs;
-    messagesInLastSecond += msgs;
   });
 
   socket.on('error', (err) => {
@@ -95,6 +233,34 @@ const httpServer = http.createServer((req, res) => {
     return;
   }
 
+  if (url === '/config') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const cfg = JSON.parse(body || '{}');
+          if (typeof cfg.ackEvery === 'number' && cfg.ackEvery >= 1) {
+            ACK_EVERY = cfg.ackEvery;
+          }
+          if (typeof cfg.parseMode === 'string') {
+            PARSE_MODE = cfg.parseMode;
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'ok', ackEvery: ACK_EVERY, parseMode: PARSE_MODE }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ackEvery: ACK_EVERY, parseMode: PARSE_MODE }));
+      return;
+    }
+  }
+
   if (url === '/metrics') {
     const mem = process.memoryUsage();
     const metricsData = {
@@ -102,6 +268,8 @@ const httpServer = http.createServer((req, res) => {
       pid: process.pid,
       tcpPort: TCP_PORT,
       httpPort: HTTP_PORT,
+      ackEvery: ACK_EVERY,
+      parseMode: PARSE_MODE,
       activeConnections,
       totalConnections,
       messagesPerSec: currentMsgRate,
@@ -127,72 +295,79 @@ const httpServer = http.createServer((req, res) => {
   }
 
   res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not Found', endpoints: ['/health', '/metrics'] }));
+  res.end(JSON.stringify({ error: 'Not Found', endpoints: ['/health', '/metrics', '/config'] }));
 });
 
 httpServer.on('error', (err) => {
   console.error(`[${NODE_ID} HTTP Server] Error: ${err.message}`);
 });
 
-// -------------------------------------------------------------
-// 3. Periodic Telemetry Calculation & Logging
-// -------------------------------------------------------------
-setInterval(() => {
-  currentMsgRate = messagesInLastSecond;
-  currentByteRate = bytesInLastSecond;
-  messagesInLastSecond = 0;
-  bytesInLastSecond = 0;
+// Start listeners & monitoring when run directly
+if (require.main === module) {
+  // -------------------------------------------------------------
+  // 3. Periodic Telemetry Calculation & Logging
+  // -------------------------------------------------------------
+  setInterval(() => {
+    currentMsgRate = messagesInLastSecond;
+    currentByteRate = bytesInLastSecond;
+    messagesInLastSecond = 0;
+    bytesInLastSecond = 0;
 
-  const cpuNow = process.cpuUsage();
-  const timeNow = Date.now();
-  const userDiff = cpuNow.user - lastCpuUsage.user;
-  const sysDiff = cpuNow.system - lastCpuUsage.system;
-  const timeDiff = (timeNow - lastCpuTime) * 1000;
-  if (timeDiff > 0) {
-    currentCpuPercent = (((userDiff + sysDiff) / timeDiff) * 100).toFixed(1);
-  }
-  lastCpuUsage = cpuNow;
-  lastCpuTime = timeNow;
+    const cpuNow = process.cpuUsage();
+    const timeNow = Date.now();
+    const userDiff = cpuNow.user - lastCpuUsage.user;
+    const sysDiff = cpuNow.system - lastCpuUsage.system;
+    const timeDiff = (timeNow - lastCpuTime) * 1000;
+    if (timeDiff > 0) {
+      currentCpuPercent = (((userDiff + sysDiff) / timeDiff) * 100).toFixed(1);
+    }
+    lastCpuUsage = cpuNow;
+    lastCpuTime = timeNow;
 
-  // Log heartbeat stats every 5s if active or regularly
-  const mem = process.memoryUsage();
-  const rssMB = (mem.rss / (1024 * 1024)).toFixed(1);
-  const kbSec = (currentByteRate / 1024).toFixed(1);
+    // Log heartbeat stats every 5s if active or regularly
+    const mem = process.memoryUsage();
+    const rssMB = (mem.rss / (1024 * 1024)).toFixed(1);
+    const kbSec = (currentByteRate / 1024).toFixed(1);
 
-  if (activeConnections > 0 || totalConnections > 0) {
-    const timestamp = new Date().toISOString().split('T')[1].slice(0, 8);
-    console.log(
-      `[${timestamp}] [Node ${NODE_ID}] Active Sockets: ${activeConnections.toString().padStart(4)} | ` +
-      `Rate: ${currentMsgRate.toString().padStart(5)} msg/s (${kbSec.padStart(5)} KB/s) | ` +
-      `RSS: ${rssMB.padStart(5)} MB | CPU: ${currentCpuPercent.padStart(4)}%`
-    );
-  }
-}, 1000);
+    if (activeConnections > 0 || totalConnections > 0) {
+      const timestamp = new Date().toISOString().split('T')[1].slice(0, 8);
+      console.log(
+        `[${timestamp}] [Node ${NODE_ID}] Active Sockets: ${activeConnections.toString().padStart(4)} | ` +
+        `Rate: ${currentMsgRate.toString().padStart(5)} msg/s (${kbSec.padStart(5)} KB/s) | ` +
+        `RSS: ${rssMB.padStart(5)} MB | CPU: ${currentCpuPercent.padStart(4)}%`
+      );
+    }
+  }, 1000);
 
-// Start listeners
-tcpServer.listen(TCP_PORT, HOST, () => {
-  httpServer.listen(HTTP_PORT, HOST, () => {
-    console.log(`=======================================================`);
-    console.log(`📡 Ingestion Node [${NODE_ID}] Online`);
-    console.log(`   TCP Ingestion Port : tcp://${HOST}:${TCP_PORT}`);
-    console.log(`   HTTP Metrics Port  : http://${HOST}:${HTTP_PORT}/metrics`);
-    console.log(`   HTTP Health Port   : http://${HOST}:${HTTP_PORT}/health`);
-    console.log(`   Process PID        : ${process.pid}`);
-    console.log(`=======================================================`);
-  });
-});
-
-// Graceful shutdown
-function shutdown() {
-  console.log(`\nShutting down Node ${NODE_ID}...`);
-  tcpServer.close(() => {
-    httpServer.close(() => {
-      console.log(`Node ${NODE_ID} offline. Bye!`);
-      process.exit(0);
+  tcpServer.listen(TCP_PORT, HOST, () => {
+    httpServer.listen(HTTP_PORT, HOST, () => {
+      console.log(`=======================================================`);
+      console.log(`📡 Ingestion Node [${NODE_ID}] Online`);
+      console.log(`   TCP Ingestion Port : tcp://${HOST}:${TCP_PORT}`);
+      console.log(`   HTTP Metrics Port  : http://${HOST}:${HTTP_PORT}/metrics`);
+      console.log(`   HTTP Health Port   : http://${HOST}:${HTTP_PORT}/health`);
+      console.log(`   Process PID        : ${process.pid}`);
+      console.log(`=======================================================`);
     });
   });
-  setTimeout(() => process.exit(0), 2000).unref();
+
+  // Graceful shutdown
+  function shutdown() {
+    console.log(`\nShutting down Node ${NODE_ID}...`);
+    tcpServer.close(() => {
+      httpServer.close(() => {
+        console.log(`Node ${NODE_ID} offline. Bye!`);
+        process.exit(0);
+      });
+    });
+    setTimeout(() => process.exit(0), 2000).unref();
+  }
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
 
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+module.exports = {
+  extractSeqRegex,
+  extractSeqBuffer
+};
